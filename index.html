@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Image Resizer & Compressor • Sylea Studio</title>
+
+  <!-- Font: Poppins -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #F4E8D2;
+      --fg: #1C1D22;
+      --accent: #1C1D22;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 8px 28px rgba(28,29,34,0.08);
+      padding: 32px;
+      width: 100%;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+
+    p.lead {
+      color: rgba(28,29,34,0.7);
+      font-size: 14px;
+      margin-bottom: 22px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .upload-label {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(28,29,34,0.12);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+
+    .upload-label:hover { opacity: .9; }
+    .upload-label:active { transform: scale(0.98); }
+
+    .preview {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    canvas {
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(28,29,34,0.08);
+    }
+
+    .controls {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: rgba(28,29,34,0.8);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .output {
+      margin-top: 20px;
+      font-size: 14px;
+      color: rgba(28,29,34,0.75);
+      text-align: center;
+    }
+
+    .btn-download {
+      display: none;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 16px;
+      text-decoration: none;
+      box-shadow: 0 6px 18px rgba(28,29,34,0.12);
+    }
+
+    footer {
+      text-align: center;
+      font-size: 13px;
+      color: rgba(28,29,34,0.6);
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Image Resizer & Compressor</h1>
+    <p class="lead">Resize and compress your images directly in your browser.</p>
+
+    <label for="imageInput" class="upload-label">Upload Image</label>
+    <input type="file" id="imageInput" accept="image/*">
+
+    <div class="preview">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls" id="controls" style="display:none;">
+      <label>Resize (%): <span id="resizeValue">100</span>%</label>
+      <input type="range" id="resizeRange" min="10" max="100" value="100">
+
+      <label>Compression (JPG Quality): <span id="qualityValue">90</span>%</label>
+      <input type="range" id="qualityRange" min="10" max="100" value="90">
+    </div>
+
+    <div class="output" id="outputInfo"></div>
+    <a id="downloadBtn" class="btn-download" download="compressed-image.jpg">Download Image</a>
+
+    <footer>Minimal Tool • Sylea Studio</footer>
+  </div>
+
+  <script>
+    const input = document.getElementById('imageInput');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const resizeRange = document.getElementById('resizeRange');
+    const qualityRange = document.getElementById('qualityRange');
+    const resizeValue = document.getElementById('resizeValue');
+    const qualityValue = document.getElementById('qualityValue');
+    const controls = document.getElementById('controls');
+    const outputInfo = document.getElementById('outputInfo');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let originalImage = null;
+    let currentBlob = null;
+
+    input.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = evt => {
+        const img = new Image();
+        img.onload = () => {
+          originalImage = img;
+          drawImage();
+          controls.style.display = 'block';
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function drawImage() {
+      if (!originalImage) return;
+      const scale = resizeRange.value / 100;
+      const width = originalImage.width * scale;
+      const height = originalImage.height * scale;
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(originalImage, 0, 0, width, height);
+      updateOutput();
+    }
+
+    function updateOutput() {
+      const quality = qualityRange.value / 100;
+      resizeValue.textContent = resizeRange.value;
+      qualityValue.textContent = qualityRange.value;
+
+      canvas.toBlob(blob => {
+        if (blob) {
+          currentBlob = blob;
+          const kb = (blob.size / 1024).toFixed(1);
+          outputInfo.textContent = `Current size: ${kb} KB`;
+          downloadBtn.style.display = 'inline-block';
+          downloadBtn.href = URL.createObjectURL(blob);
+        }
+      }, 'image/jpeg', quality);
+    }
+
+    resizeRange.addEventListener('input', drawImage);
+    qualityRange.addEventListener('input', updateOutput);
+  </script>
+</body>
+</html>
